@@ -1,365 +1,189 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-
     <title>Evil Manul - Anti-Tamagotchi</title>
-
     <!-- Telegram WebApp SDK -->
-
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
     <style>
-
         body {
-
             background-color: #121212;
-
             color: #ffffff;
-
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-
             text-align: center;
-
             padding: 15px;
-
             margin: 0;
-
             user-select: none;
-
             -webkit-user-select: none;
-
         }
-
         .container {
-
             max-width: 400px;
-
             margin: 0 auto;
-
         }
-
         .manul-img {
-
             width: 220px;
-
             height: 220px;
-
             border-radius: 24px;
-
             object-fit: cover;
-
             border: 3px solid #ff4757;
-
             box-shadow: 0 0 20px rgba(255, 71, 87, 0.4);
-
             transition: transform 0.1s ease;
-
         }
-
         .manul-img:active {
-
             transform: scale(0.96) rotate(-2deg);
-
         }
-
         .stats {
-
             background: #1e1e1e;
-
             padding: 12px;
-
             border-radius: 14px;
-
             margin: 12px 0;
-
             border: 1px solid #333;
-
             font-size: 14px;
-
         }
-
         .score-num {
-
             font-size: 20px;
-
             font-weight: bold;
-
             color: #ff4757;
-
         }
-
         .energy-bar-container {
-
             background: #333;
-
             border-radius: 10px;
-
             height: 12px;
-
             width: 100%;
-
             margin-top: 8px;
-
             overflow: hidden;
-
             border: 1px solid #444;
-
         }
-
         .energy-bar {
-
             background: linear-gradient(90deg, #ff4757, #ffa502);
-
             height: 100%;
-
             width: 100%;
-
             transition: width 0.2s ease;
-
         }
-
         .actions-grid {
-
             display: flex;
-
             flex-direction: column;
-
             gap: 10px;
-
             margin-top: 15px;
-
         }
-
         .btn-mess {
-
             background: linear-gradient(135deg, #ff4757, #ff6b81);
-
             color: white;
-
             border: none;
-
             padding: 12px 15px;
-
             font-size: 15px;
-
             border-radius: 12px;
-
             cursor: pointer;
-
             font-weight: bold;
-
             width: 100%;
-
             box-shadow: 0 4px 10px rgba(255, 71, 87, 0.3);
-
             transition: transform 0.08s ease, opacity 0.2s;
-
             display: flex;
-
             justify-content: space-between;
-
             align-items: center;
-
         }
-
         .btn-mess:active {
-
             transform: scale(0.97);
-
         }
-
         .btn-mess:disabled {
-
             background: #444;
-
             color: #777;
-
             box-shadow: none;
-
             cursor: not-allowed;
-
         }
-
         .dialogue {
-
             background: #252525;
-
             border-left: 4px solid #ff4757;
-
             padding: 12px;
-
             margin-top: 15px;
-
             border-radius: 0 12px 12px 0;
-
             text-align: left;
-
             font-style: italic;
-
             font-size: 14px;
-
             line-height: 1.4;
-
             min-height: 42px;
-
         }
-        </style>
-
+    </style>
 </head>
-
 <body>
 
-
-
     <div class="container">
-
         <h1 style="margin: 0 0 5px 0; font-size: 24px;">Manul Dude 😾</h1>
-
         <p style="color: #888; margin: 0 0 10px 0; font-size: 13px;">The Boss of Chaos</p>
-
         
-
         <!-- Character Image -->
-
         <img src="manul.jpg" alt="Manul Dude" class="manul-img" id="manulImg">
 
-
-
         <div class="stats">
-
             <div style="display: flex; justify-content: space-between; align-items: center;">
-
                 <span>💥 Chaos: <span id="score" class="score-num">0</span></span>
-
                 <span>⚡️ Energy: <span id="energyText">100</span>/100</span>
-
             </div>
-
             <div class="energy-bar-container">
-
                 <div class="energy-bar" id="energyBar"></div>
-
             </div>
-
         </div>
-
-
 
         <!-- Кнопки разных активностей с разной стоимостью энергии -->
-
         <div class="actions-grid">
-
             <button class="btn-mess" id="btn1" onclick="makeMess(5, 10, 'cup')">
-
                 <span>☕️ Push Cup Off Table</span> 
-
                 <span style="font-size: 12px; opacity: 0.8;">-5⚡ | +10💥</span>
-
             </button>
-
             <button class="btn-mess" id="btn2" onclick="makeMess(15, 35, 'sofa')">
-
                 <span>🛋 Scratch the Sofa</span> 
-
                 <span style="font-size: 12px; opacity: 0.8;">-15⚡ | +35💥</span>
-
             </button>
-
             <button class="btn-mess" id="btn3" onclick="makeMess(40, 100, 'shoes')">
-
                 <span>🥾 Mess in Shoes</span> 
-
                 <span style="font-size: 12px; opacity: 0.8;">-40⚡ | +100💥</span>
-
             </button>
-
         </div>
-
-
 
         <div class="dialogue" id="dialogueText">
-
             Manul: "Sup man? You ready to cause some real chaos or just gonna stare at me, dude?"
-
         </div>
-
     </div>
 
-
-
     <script>
-
         let tg = window.Telegram.WebApp;
-
         tg.expand();
 
-
-
         // Загружаем данные из памяти
-
         let score = parseInt(localStorage.getItem('manul_chaos_score')) || 0;
-
         let energy = parseInt(localStorage.getItem('manul_energy')) || 100;
-
         const maxEnergy = 100;
 
-
-
         document.getElementById('score').innerText = score;
-
         updateEnergyUI();
 
-
-
         const phrases = {
-
             cup: [
-
                 "C'mon dude, that cup fell way too quietly! Weak push!",
-
                 "Sup man, just a tiny warmup. Do it again!"
-
             ],
-
             sofa: [
-
                 "Bro, this leather sofa is totally ruined now. I respect that.",
-
                 "That's what I'm talking about, dude! Shred it to pieces!"
-
             ],
-
             shoes: [
-
                 "Absolute masterpiece of a vandalism, bro! Maximum damage!",
-
                 "Now *that* is elite chaos, dude. You're learning from a master."
-
             ],
-
             noEnergy: [
-
                 "Bro, I'm out of energy! Let a dude take a nap, stop spamming!",
-
                 "Sup man, my paws are tired. Wait for energy to recharge, dude!",
-
                 "No juice left, c'mon! Bring me some food or let me rest."
-
             ]
-
         };
-function makeMess(cost, reward, type) {
+
+        function makeMess(cost, reward, type) {
             if (energy < cost) {
                 // Если энергии не хватает
                 let noEnergyPhrases = phrases.noEnergy;
                 let randomPhrase = noEnergyPhrases[Math.floor(Math.random() * noEnergyPhrases.length)];
-                document.getElementById('dialogueText').innerText = Manul: "${randomPhrase}";
+                document.getElementById('dialogueText').innerText = `Manul: "${randomPhrase}"`;
                 
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
                 return;
@@ -379,7 +203,7 @@ function makeMess(cost, reward, type) {
             // Выводим реплику Манула под конкретное действие
             let actionPhrases = phrases[type];
             let randomPhrase = actionPhrases[Math.floor(Math.random() * actionPhrases.length)];
-            document.getElementById('dialogueText').innerText = Manul: "${randomPhrase}";
+            document.getElementById('dialogueText').innerText = `Manul: "${randomPhrase}"`;
 
             // Вибрация
             if (tg.HapticFeedback) {
@@ -404,6 +228,3 @@ function makeMess(cost, reward, type) {
     </script>
 </body>
 </html>
-
-
-       
