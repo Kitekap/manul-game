@@ -209,4 +209,201 @@
             min-height: 42px;
 
         }
+        </style>
 
+</head>
+
+<body>
+
+
+
+    <div class="container">
+
+        <h1 style="margin: 0 0 5px 0; font-size: 24px;">Manul Dude 😾</h1>
+
+        <p style="color: #888; margin: 0 0 10px 0; font-size: 13px;">The Boss of Chaos</p>
+
+        
+
+        <!-- Character Image -->
+
+        <img src="manul.jpg" alt="Manul Dude" class="manul-img" id="manulImg">
+
+
+
+        <div class="stats">
+
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+
+                <span>💥 Chaos: <span id="score" class="score-num">0</span></span>
+
+                <span>⚡️ Energy: <span id="energyText">100</span>/100</span>
+
+            </div>
+
+            <div class="energy-bar-container">
+
+                <div class="energy-bar" id="energyBar"></div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- Кнопки разных активностей с разной стоимостью энергии -->
+
+        <div class="actions-grid">
+
+            <button class="btn-mess" id="btn1" onclick="makeMess(5, 10, 'cup')">
+
+                <span>☕️ Push Cup Off Table</span> 
+
+                <span style="font-size: 12px; opacity: 0.8;">-5⚡ | +10💥</span>
+
+            </button>
+
+            <button class="btn-mess" id="btn2" onclick="makeMess(15, 35, 'sofa')">
+
+                <span>🛋 Scratch the Sofa</span> 
+
+                <span style="font-size: 12px; opacity: 0.8;">-15⚡ | +35💥</span>
+
+            </button>
+
+            <button class="btn-mess" id="btn3" onclick="makeMess(40, 100, 'shoes')">
+
+                <span>🥾 Mess in Shoes</span> 
+
+                <span style="font-size: 12px; opacity: 0.8;">-40⚡ | +100💥</span>
+
+            </button>
+
+        </div>
+
+
+
+        <div class="dialogue" id="dialogueText">
+
+            Manul: "Sup man? You ready to cause some real chaos or just gonna stare at me, dude?"
+
+        </div>
+
+    </div>
+
+
+
+    <script>
+
+        let tg = window.Telegram.WebApp;
+
+        tg.expand();
+
+
+
+        // Загружаем данные из памяти
+
+        let score = parseInt(localStorage.getItem('manul_chaos_score')) || 0;
+
+        let energy = parseInt(localStorage.getItem('manul_energy')) || 100;
+
+        const maxEnergy = 100;
+
+
+
+        document.getElementById('score').innerText = score;
+
+        updateEnergyUI();
+
+
+
+        const phrases = {
+
+            cup: [
+
+                "C'mon dude, that cup fell way too quietly! Weak push!",
+
+                "Sup man, just a tiny warmup. Do it again!"
+
+            ],
+
+            sofa: [
+
+                "Bro, this leather sofa is totally ruined now. I respect that.",
+
+                "That's what I'm talking about, dude! Shred it to pieces!"
+
+            ],
+
+            shoes: [
+
+                "Absolute masterpiece of a vandalism, bro! Maximum damage!",
+
+                "Now *that* is elite chaos, dude. You're learning from a master."
+
+            ],
+
+            noEnergy: [
+
+                "Bro, I'm out of energy! Let a dude take a nap, stop spamming!",
+
+                "Sup man, my paws are tired. Wait for energy to recharge, dude!",
+
+                "No juice left, c'mon! Bring me some food or let me rest."
+
+            ]
+
+        };
+function makeMess(cost, reward, type) {
+            if (energy < cost) {
+                // Если энергии не хватает
+                let noEnergyPhrases = phrases.noEnergy;
+                let randomPhrase = noEnergyPhrases[Math.floor(Math.random() * noEnergyPhrases.length)];
+                document.getElementById('dialogueText').innerText = Manul: "${randomPhrase}";
+                
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+                return;
+            }
+
+            // Тратим энергию и даем очки
+            energy -= cost;
+            score += reward;
+
+            // Сохраняем
+            localStorage.setItem('manul_chaos_score', score);
+            localStorage.setItem('manul_energy', energy);
+
+            document.getElementById('score').innerText = score;
+            updateEnergyUI();
+
+            // Выводим реплику Манула под конкретное действие
+            let actionPhrases = phrases[type];
+            let randomPhrase = actionPhrases[Math.floor(Math.random() * actionPhrases.length)];
+            document.getElementById('dialogueText').innerText = Manul: "${randomPhrase}";
+
+            // Вибрация
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
+        }
+
+        // Авто-восстановление энергии (+1 каждые 2 секунды)
+        setInterval(() => {
+            if (energy < maxEnergy) {
+                energy = Math.min(maxEnergy, energy + 1);
+                localStorage.setItem('manul_energy', energy);
+                updateEnergyUI();
+            }
+        }, 2000);
+
+        function updateEnergyUI() {
+            document.getElementById('energyText').innerText = energy;
+            let percent = (energy / maxEnergy) * 100;
+            document.getElementById('energyBar').style.width = percent + '%';
+        }
+    </script>
+</body>
+</html>
+
+
+       
