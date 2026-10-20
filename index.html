@@ -35,11 +35,11 @@
             box-shadow: 0 0 25px rgba(255, 71, 87, 0.4);
             transition: transform 0.08s ease, box-shadow 0.08s ease;
         }
-        /* Анимация при клике (тап-эффект) */
-        .manul-container:active .manul-img {
-            transform: scale(0.93) rotate(-3deg);
-            box-shadow: 0 0 35px rgba(255, 71, 87, 0.8);
+        /* Анимация при зарядке супер-удара */
+        .charging .manul-img {
+            transform: scale(0.92);
             border-color: #ffa502;
+            box-shadow: 0 0 40px rgba(255, 165, 2, 0.8);
         }
         .stats {
             background: #1e1e1e;
@@ -82,7 +82,7 @@
         }
         .hint {
             color: #777;
-            font-size: 13px;
+            font-size: 12px;
             margin-top: 10px;
         }
     </style>
@@ -91,10 +91,10 @@
 
     <div class="container">
         <h1 style="margin: 0 0 5px 0; font-size: 26px;">Manul Dude 😾</h1>
-        <p style="color: #888; margin: 0 0 10px 0; font-size: 13px;">Tap the boss to cause chaos</p>
+        <p style="color: #888; margin: 0 0 10px 0; font-size: 13px;">Tap or Hold to unleash chaos</p>
         
-        <!-- Главная интерактивная зона (сам Манул) -->
-        <div class="manul-container" onclick="tapManul()">
+        <!-- Интерактивная зона манула с поддержкой зажатия -->
+        <div class="manul-container" id="manulBox">
             <img src="manul.jpg" alt="Manul Dude" class="manul-img" id="manulImg">
         </div>
 
@@ -113,10 +113,10 @@
         </div>
 
         <div class="dialogue" id="dialogueText">
-            Manul: "Sup man? Tap me if you dare, dude!"
+            Manul: "Sup man? Tap me or hold to charge chaos, dude!"
         </div>
         
-        <div class="hint">⚡️ Costs 3 energy per tap (+5 chaos)</div>
+        <div class="hint">💡 Quick tap: -3⚡ (+5💥) | Hold & Release: Super Epic Vandalism!</div>
     </div>
 
     <script>
@@ -126,50 +126,108 @@
         let score = parseInt(localStorage.getItem('manul_chaos_score')) || 0;
         let energy = parseInt(localStorage.getItem('manul_energy')) || 100;
         const maxEnergy = 100;
-        const tapCost = 3;
-        const tapReward = 5;
 
         updateUI();
 
         const hitPhrases = [
-            "C'man dude, harder! Is that all you've got?",
+            "C'mon dude, harder! Is that all you've got?",
             "Sup man, don't test my patience, bro!",
             "Ouch? Nah, I felt nothing, pathetic human.",
-            "That's pure chaos, keep tapping, dude!",
-            "Bro, you're messing with the wrong cat.",
-            "Stop poking me or I'll ruin your shoes, man!"
+            "That's pure chaos, keep tapping, dude!"
+        ];
+
+        const superPhrases = [
+            "BOOM! Absolute destruction, bro! That's how a boss does it!",
+            "Holy moly, dude! You just wrecked the whole room!",
+            "Maximum rage activated! Respect, man!"
         ];
 
         const noEnergyPhrases = [
             "Bro, I'm out of energy! Let a dude take a nap!",
-            "Sup man, my paws are tired. Wait for recharge, dude!",
-            "No juice left, c'mon! Let me rest!"
+            "Sup man, my paws are tired. Wait for recharge, dude!"
         ];
 
-        function tapManul() {
-            if (energy < tapCost) {
-                let randomPhrase = noEnergyPhrases[Math.floor(Math.random() * noEnergyPhrases.length)];
-                document.getElementById('dialogueText').innerText = `Manul: "${randomPhrase}"`;
-                if (tg && tg.HapticFeedback) {
-                    try { tg.HapticFeedback.notificationOccurred('error'); } catch(e){}
-                }
+        let pressTimer = null;
+        let isHolding = false;
+        const box = document.getElementById('manulBox');
+
+        // События нажатия (поддержка и мышки, и телефонов)
+        box.addEventListener('mousedown', startPress);
+        box.addEventListener('touchstart', (e) => { e.preventDefault(); startPress(); });
+
+        box.addEventListener('mouseup', endPress);
+        box.addEventListener('touchend', (e) => { e.preventDefault(); endPress(); });
+
+        function startPress() {
+            isHolding = false;
+            box.classList.add('charging');
+            
+            // Если зажали больше чем на 800мс — это супер-удар (Hold)
+            pressTimer = setTimeout(() => {
+                isHolding = true;
+                triggerSuperChaos();
+            }, 800);
+        }
+
+        function endPress() {
+            box.classList.remove('charging');
+            
+            if (pressTimer) {
+                clearTimeout(pressTimer);
+                pressTimer = null;
+            }
+
+            // Если палец убрали РИСКНУВ ДО КАНЦА ЗАРЯДКИ — сработал обычный тап
+            if (!isHolding) {
+                triggerNormalTap();
+            }
+        }
+
+        function triggerNormalTap() {
+            const cost = 3;
+            const reward = 5;
+
+            if (energy < cost) {
+                showDialogue(noEnergyPhrases);
+                if (tg && tg.HapticFeedback) { try { tg.HapticFeedback.notificationOccurred('error'); } catch(e){} }
                 return;
             }
 
-            energy -= tapCost;
-            score += tapReward;
+            energy -= cost;
+            score += reward;
+            saveAndRefresh();
 
+            showDialogue(hitPhrases);
+            if (tg && tg.HapticFeedback) { try { tg.HapticFeedback.impactOccurred('medium'); } catch(e){} }
+        }
+
+        function triggerSuperChaos() {
+            const cost = 25;
+            const reward = 60;
+
+            if (energy < cost) {
+                document.getElementById('dialogueText').innerText = `Manul: "Bro, not enough energy for a super smash! Let me rest!"`;
+                if (tg && tg.HapticFeedback) { try { tg.HapticFeedback.notificationOccurred('error'); } catch(e){} }
+                return;
+            }
+
+            energy -= cost;
+            score += reward;
+            saveAndRefresh();
+
+            showDialogue(superPhrases);
+            if (tg && tg.HapticFeedback) { try { tg.HapticFeedback.notificationOccurred('heavy'); } catch(e){} }
+        }
+
+        function showDialogue(phraseArray) {
+            let randomPhrase = phraseArray[Math.floor(Math.random() * phraseArray.length)];
+            document.getElementById('dialogueText').innerText = `Manul: "${randomPhrase}"`;
+        }
+
+        function saveAndRefresh() {
             localStorage.setItem('manul_chaos_score', score);
             localStorage.setItem('manul_energy', energy);
-
             updateUI();
-
-            let randomPhrase = hitPhrases[Math.floor(Math.random() * hitPhrases.length)];
-            document.getElementById('dialogueText').innerText = `Manul: "${randomPhrase}"`;
-
-            if (tg && tg.HapticFeedback) {
-                try { tg.HapticFeedback.impactOccurred('medium'); } catch(e){}
-            }
         }
 
         // Авто-восстановление энергии (+1 каждые 1.5 секунды)
