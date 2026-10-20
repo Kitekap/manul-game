@@ -1,3 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Evil Manul - Anti-Tamagotchi</title>
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .manul-img {
+            width: 260px;
+            height: 260px;
+            border-radius: 24px;
+            object-fit: cover;
+            border: 3px solid #ff4757;
+            box-shadow: 0 0 25px rgba(255, 71, 87, 0.4);
+            transition: transform 0.1s ease;
+        }
+        .manul-img:active {
+            transform: scale(0.96) rotate(-2deg);
+        }
+        .stats {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 16px;
+            margin: 20px 0;
+            border: 1px solid #333;
+        }
+        .score-num {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff4757;
+        }
+        .btn-mess {
+            background: linear-gradient(135deg, #ff4757, #ff6b81);
+            color: white;
+            border: none;
+            padding: 16px 20px;
+            font-size: 18px;
+            border-radius: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            box-shadow: 0 6px 15px rgba(255, 71, 87, 0.4);
+            transition: transform 0.08s ease;
+        }
+        .btn-mess:active {
+            transform: scale(0.95);
+        }
+        .dialogue {
+            background: #252525;
+            border-left: 4px solid #ff4757;
+            padding: 14px;
+            margin-top: 20px;
+            border-radius: 0 14px 14px 0;
+            text-align: left;
+            font-style: italic;
+            font-size: 15px;
+            line-height: 1.4;
+            min-height: 48px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1 style="margin-bottom: 5px;">Manul Dude 😾</h1>
+        <p style="color: #888; margin-top: 0; font-size: 14px;">The Boss of Chaos</p>
+        
+        <!-- Image of a Grumpy Manul -->
+        <img src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=600" alt="Manul Boss" class="manul-img" id="manulImg">
+
+        <div class="stats">
+            <p style="margin: 5px 0;">💥 Chaos Points: <span id="score" class="score-num">0</span></p>
+            <p style="margin: 5px 0; font-size: 14px; color: #aaa;">⚡️ Status: <span id="mood">Judgey Mode</span></p>
+        </div>
+
+        <button class="btn-mess" onclick="makeMess()">💥 Drop the Cup, Dude!</button>
+
+        <div class="dialogue" id="dialogueText">
+            Manul: "Sup man? You ready to cause some real chaos or just gonna stare at me, dude?"
+        </div>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // Load saved chaos score
+        let score = parseInt(localStorage.getItem('manul_chaos_score')) || 0;
+        document.getElementById('score').innerText = score;
+
+        const phrases = [
+            "C'mon dude, that cup fell way too quietly! Weak push!",
+            "Bro, this carpet is totally ruined now. I respect that.",
+            "You're cleaning this up anyway, dude. Keep smashing!",
+            "My greatness just went up by 1%, bro. You put zero effort in.",
+            "Sup man, move that phone away and let a dude nap!",
+            "Insane! It shattered! Now pretend it was the wind, bro.",
+            "Not enough chaos around here! I need more broken stuff, dude!"
+        ];
 function makeMess() {
             score += 10;
             
