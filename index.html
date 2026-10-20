@@ -9,142 +9,183 @@
         body {
             background-color: #121212;
             color: #ffffff;
-            font-family: sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             text-align: center;
             padding: 15px;
             margin: 0;
             user-select: none;
+            -webkit-user-select: none;
         }
         .container {
             max-width: 400px;
             margin: 0 auto;
         }
+        .manul-container {
+            margin: 20px 0;
+            cursor: pointer;
+            display: inline-block;
+            position: relative;
+        }
         .manul-img {
-            width: 220px;
-            height: 220px;
-            border-radius: 24px;
+            width: 240px;
+            height: 240px;
+            border-radius: 28px;
             object-fit: cover;
-            border: 3px solid #ff4757;
-            box-shadow: 0 0 20px rgba(255, 71, 87, 0.4);
+            border: 4px solid #ff4757;
+            box-shadow: 0 0 25px rgba(255, 71, 87, 0.4);
+            transition: transform 0.08s ease, box-shadow 0.08s ease;
+        }
+        /* Анимация при клике (тап-эффект) */
+        .manul-container:active .manul-img {
+            transform: scale(0.93) rotate(-3deg);
+            box-shadow: 0 0 35px rgba(255, 71, 87, 0.8);
+            border-color: #ffa502;
         }
         .stats {
             background: #1e1e1e;
-            padding: 12px;
-            border-radius: 14px;
-            margin: 12px 0;
+            padding: 15px;
+            border-radius: 16px;
+            margin: 15px 0;
             border: 1px solid #333;
         }
         .score-num {
-            font-size: 20px;
+            font-size: 24px;
             font-weight: bold;
             color: #ff4757;
         }
         .energy-bar-container {
             background: #333;
             border-radius: 10px;
-            height: 12px;
+            height: 14px;
             width: 100%;
-            margin-top: 8px;
+            margin-top: 10px;
             overflow: hidden;
+            border: 1px solid #444;
         }
         .energy-bar {
             background: linear-gradient(90deg, #ff4757, #ffa502);
             height: 100%;
             width: 100%;
-        }
-        .btn-mess {
-            background: linear-gradient(135deg, #ff4757, #ff6b81);
-            color: white;
-            border: none;
-            padding: 12px 15px;
-            font-size: 15px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-weight: bold;
-            width: 100%;
-            margin-top: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            transition: width 0.15s ease;
         }
         .dialogue {
             background: #252525;
             border-left: 4px solid #ff4757;
-            padding: 12px;
+            padding: 14px;
             margin-top: 15px;
-            border-radius: 0 12px 12px 0;
+            border-radius: 0 14px 14px 0;
             text-align: left;
             font-style: italic;
             font-size: 14px;
+            line-height: 1.4;
+            min-height: 46px;
+        }
+        .hint {
+            color: #777;
+            font-size: 13px;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>Manul Dude 😾</h1>
+        <h1 style="margin: 0 0 5px 0; font-size: 26px;">Manul Dude 😾</h1>
+        <p style="color: #888; margin: 0 0 10px 0; font-size: 13px;">Tap the boss to cause chaos</p>
         
-        <img src="manul.jpg" alt="Manul Dude" class="manul-img">
+        <!-- Главная интерактивная зона (сам Манул) -->
+        <div class="manul-container" onclick="tapManul()">
+            <img src="manul.jpg" alt="Manul Dude" class="manul-img" id="manulImg">
+        </div>
 
         <div class="stats">
-            <div>💥 Chaos: <span id="score" class="score-num">0</span></div>
-            <div>⚡️ Energy: <span id="energyText">100</span>/100</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <span>💥 Chaos:</span>
+                <span id="score" class="score-num">0</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #aaa;">
+                <span>⚡️ Energy</span>
+                <span><span id="energyText">100</span> / 100</span>
+            </div>
             <div class="energy-bar-container">
                 <div class="energy-bar" id="energyBar"></div>
             </div>
         </div>
 
-        <div>
-            <button class="btn-mess" onclick="action(5, 10, 'Sup man, weak push!')">
-                <span>☕️ Push Cup</span><span>-5⚡ | +10💥</span>
-            </button>
-            <button class="btn-mess" onclick="action(15, 35, 'Bro, sofa is ruined!')">
-                <span>🛋 Scratch Sofa</span><span>-15⚡ | +35💥</span>
-            </button>
-            <button class="btn-mess" onclick="action(40, 100, 'Absolute vandalism!')">
-                <span>🥾 Mess in Shoes</span><span>-40⚡ | +100💥</span>
-            </button>
+        <div class="dialogue" id="dialogueText">
+            Manul: "Sup man? Tap me if you dare, dude!"
         </div>
-
-        <div class="dialogue" id="msg">
-            Manul: "Sup man? Ready to cause chaos, dude?"
-        </div>
+        
+        <div class="hint">⚡️ Costs 3 energy per tap (+5 chaos)</div>
     </div>
 
     <script>
-        let score = parseInt(localStorage.getItem('score')) || 0;
-        let energy = parseInt(localStorage.getItem('energy')) || 100;
+        let tg = window.Telegram.WebApp;
+        try { tg.expand(); } catch (e) {}
+
+        let score = parseInt(localStorage.getItem('manul_chaos_score')) || 0;
+        let energy = parseInt(localStorage.getItem('manul_energy')) || 100;
+        const maxEnergy = 100;
+        const tapCost = 3;
+        const tapReward = 5;
 
         updateUI();
 
-        function action(cost, reward, text) {
-            if (energy < cost) {
-                document.getElementById('msg').innerText = 'Manul: "Bro, I am out of energy! Let me sleep!"';
+        const hitPhrases = [
+            "C'man dude, harder! Is that all you've got?",
+            "Sup man, don't test my patience, bro!",
+            "Ouch? Nah, I felt nothing, pathetic human.",
+            "That's pure chaos, keep tapping, dude!",
+            "Bro, you're messing with the wrong cat.",
+            "Stop poking me or I'll ruin your shoes, man!"
+        ];
+
+        const noEnergyPhrases = [
+            "Bro, I'm out of energy! Let a dude take a nap!",
+            "Sup man, my paws are tired. Wait for recharge, dude!",
+            "No juice left, c'mon! Let me rest!"
+        ];
+
+        function tapManul() {
+            if (energy < tapCost) {
+                let randomPhrase = noEnergyPhrases[Math.floor(Math.random() * noEnergyPhrases.length)];
+                document.getElementById('dialogueText').innerText = `Manul: "${randomPhrase}"`;
+                if (tg && tg.HapticFeedback) {
+                    try { tg.HapticFeedback.notificationOccurred('error'); } catch(e){}
+                }
                 return;
             }
 
-            energy -= cost;
-            score += reward;
+            energy -= tapCost;
+            score += tapReward;
 
-            localStorage.setItem('score', score);
-            localStorage.setItem('energy', energy);
+            localStorage.setItem('manul_chaos_score', score);
+            localStorage.setItem('manul_energy', energy);
 
             updateUI();
-            document.getElementById('msg').innerText = 'Manul: "' + text + '"';
+
+            let randomPhrase = hitPhrases[Math.floor(Math.random() * hitPhrases.length)];
+            document.getElementById('dialogueText').innerText = `Manul: "${randomPhrase}"`;
+
+            if (tg && tg.HapticFeedback) {
+                try { tg.HapticFeedback.impactOccurred('medium'); } catch(e){}
+            }
         }
 
-        setInterval(function() {
-            if (energy < 100) {
-                energy += 1;
-                localStorage.setItem('energy', energy);
+        // Авто-восстановление энергии (+1 каждые 1.5 секунды)
+        setInterval(() => {
+            if (energy < maxEnergy) {
+                energy = Math.min(maxEnergy, energy + 1);
+                localStorage.setItem('manul_energy', energy);
                 updateUI();
             }
-        }, 2000);
+        }, 1500);
 
         function updateUI() {
             document.getElementById('score').innerText = score;
             document.getElementById('energyText').innerText = energy;
-            document.getElementById('energyBar').style.width = energy + '%';
+            let percent = (energy / maxEnergy) * 100;
+            document.getElementById('energyBar').style.width = percent + '%';
         }
     </script>
 </body>
