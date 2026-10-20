@@ -86,12 +86,6 @@
         .btn-mess:active {
             transform: scale(0.97);
         }
-        .btn-mess:disabled {
-            background: #444;
-            color: #777;
-            box-shadow: none;
-            cursor: not-allowed;
-        }
         .dialogue {
             background: #252525;
             border-left: 4px solid #ff4757;
@@ -125,17 +119,17 @@
             </div>
         </div>
 
-        <!-- Кнопки разных активностей с разной стоимостью энергии -->
+        <!-- Кнопки активностей -->
         <div class="actions-grid">
-            <button class="btn-mess" id="btn1" onclick="makeMess(5, 10, 'cup')">
+            <button class="btn-mess" onclick="makeMess(5, 10, 'cup')">
                 <span>☕️ Push Cup Off Table</span> 
                 <span style="font-size: 12px; opacity: 0.8;">-5⚡ | +10💥</span>
             </button>
-            <button class="btn-mess" id="btn2" onclick="makeMess(15, 35, 'sofa')">
+            <button class="btn-mess" onclick="makeMess(15, 35, 'sofa')">
                 <span>🛋 Scratch the Sofa</span> 
                 <span style="font-size: 12px; opacity: 0.8;">-15⚡ | +35💥</span>
             </button>
-            <button class="btn-mess" id="btn3" onclick="makeMess(40, 100, 'shoes')">
+            <button class="btn-mess" onclick="makeMess(40, 100, 'shoes')">
                 <span>🥾 Mess in Shoes</span> 
                 <span style="font-size: 12px; opacity: 0.8;">-40⚡ | +100💥</span>
             </button>
@@ -147,14 +141,31 @@
     </div>
 
     <script>
+        // Инициализация Telegram WebApp
         let tg = window.Telegram.WebApp;
-        tg.expand();
+        try {
+            tg.expand();
+        } catch (e) {
+            console.log("Not inside Telegram");
+        }
 
-        // Загружаем данные из памяти
-        let score = parseInt(localStorage.getItem('manul_chaos_score')) || 0;
-        let energy = parseInt(localStorage.getItem('manul_energy')) || 100;
+        // Переменные игры
+        let score = 0;
+        let energy = 100;
         const maxEnergy = 100;
 
+        // Загрузка из localStorage с защитой
+        try {
+            let savedScore = localStorage.getItem('manul_chaos_score');
+            if (savedScore !== null) score = parseInt(savedScore, 10);
+
+            let savedEnergy = localStorage.getItem('manul_energy');
+            if (savedEnergy !== null) energy = parseInt(savedEnergy, 10);
+        } catch (e) {
+            console.log("LocalStorage error:", e);
+        }
+
+        // Первичный вывод на экран
         document.getElementById('score').innerText = score;
         updateEnergyUI();
 
@@ -180,42 +191,50 @@
 
         function makeMess(cost, reward, type) {
             if (energy < cost) {
-                // Если энергии не хватает
                 let noEnergyPhrases = phrases.noEnergy;
                 let randomPhrase = noEnergyPhrases[Math.floor(Math.random() * noEnergyPhrases.length)];
                 document.getElementById('dialogueText').innerText = `Manul: "${randomPhrase}"`;
                 
-                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+                if (tg && tg.HapticFeedback) {
+                    try { tg.HapticFeedback.notificationOccurred('error'); } catch(e){}
+                }
                 return;
             }
 
-            // Тратим энергию и даем очки
+            // Тратим энергию и добавляем очки
             energy -= cost;
             score += reward;
 
-            // Сохраняем
-            localStorage.setItem('manul_chaos_score', score);
-            localStorage.setItem('manul_energy', energy);
+            // Сохраняем в память
+            try {
+                localStorage.setItem('manul_chaos_score', score);
+                localStorage.setItem('manul_energy', energy);
+            } catch (e) {
+                console.log("Save error:", e);
+            }
 
+            // Обновляем интерфейс
             document.getElementById('score').innerText = score;
             updateEnergyUI();
 
-            // Выводим реплику Манула под конкретное действие
+            // Реплика манула
             let actionPhrases = phrases[type];
             let randomPhrase = actionPhrases[Math.floor(Math.random() * actionPhrases.length)];
             document.getElementById('dialogueText').innerText = `Manul: "${randomPhrase}"`;
 
             // Вибрация
-            if (tg.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred('medium');
+            if (tg && tg.HapticFeedback) {
+                try { tg.HapticFeedback.impactOccurred('medium'); } catch(e){}
             }
         }
 
-        // Авто-восстановление энергии (+1 каждые 2 секунды)
+        // Регенерация энергии каждые 2 секунды
         setInterval(() => {
             if (energy < maxEnergy) {
                 energy = Math.min(maxEnergy, energy + 1);
-                localStorage.setItem('manul_energy', energy);
+                try {
+                    localStorage.setItem('manul_energy', energy);
+                } catch(e){}
                 updateEnergyUI();
             }
         }, 2000);
