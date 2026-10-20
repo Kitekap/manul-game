@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evil Manul - Анти-Тамагочи</title>
+    <!-- Подключаем Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .manul-img {
+            width: 250px;
+            height: 250px;
+            border-radius: 20px;
+            object-fit: cover;
+            border: 3px solid #ff4757;
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.4);
+        }
+        .stats {
+            background: #2f2f2f;
+            padding: 15px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        button {
+            background-color: #ff4757;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            box-shadow: 0 4px 10px rgba(255, 71, 87, 0.3);
+            transition: 0.2s;
+        }
+        button:active {
+            transform: scale(0.95);
+            background-color: #ff6b81;
+        }
+        .dialogue {
+            background: #333333;
+            border-left: 4px solid #ff4757;
+            padding: 12px;
+            margin-top: 20px;
+            border-radius: 0 12px 12px 0;
+            text-align: left;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Манулыч: Босс Хаоса 😾</h1>
+        
+        <!-- Картинка персонажа (можете заменить на свою ссылку) -->
+        <img src="https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=500" alt="Манул" class="manul-img" id="manulImage">
+
+        <div class="stats">
+            <p>💥 Очки Хаоса: <span id="score">0</span></p>
+            <p>⚡️ Настроение Манула: <span id="mood">Скучает и презирает тебя</span></p>
+        </div>
+
+        <button onclick="makeMess()">💥 Скинуть чашку со стола!</button>
+
+        <div class="dialogue" id="dialogueText">
+            Манул: "Чего тебе, двуногий? Ты пришел сюда просто так или чтобы сделать мою жизнь менее унылой?"
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Telegram WebApp
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        let score = 0;
+        const phrases = [
+            "Пфф... И это всё на что ты способен? Чашка упала слишком тихо.",
+            "Прекрасно. Теперь этот ковер выглядит гораздо хуже, мне нравится.",
+            "Ты убирать за мной будешь, если что. Продолжай в том же духе.",
+            "Мой уровень величия вырос на 1%. Не гордись, это заслуга исключительно моя.",
+            "Убери свой телефон от меня, кожаный мешок, дай поспать!"
+        ];
+
+        function makeMess() {
+            score += 10;
+            document.getElementById('score').innerText = score;
+            document.getElementById('mood').innerText = "Доволен твоим вандализмом 😏";
+
+            // Рандомная фраза манула
+            let randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+            document.getElementById('dialogueText').innerText = Манул: "${randomPhrase}";
+
+            // Вибрация в телефоне (если поддерживается Telegram)
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
+        }
+    </script>
+</body>
+</html>
