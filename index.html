@@ -27,8 +27,8 @@
             position: relative;
         }
         .manul-img {
-            width: 220px;
-            height: 220px;
+            width: 210px;
+            height: 210px;
             border-radius: 28px;
             object-fit: cover;
             border: 4px solid #ff4757;
@@ -87,6 +87,35 @@
             line-height: 1.4;
             min-height: 44px;
         }
+        .voice-btn {
+            background: #2ed573;
+            color: #000;
+            border: none;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-top: 12px;
+            box-shadow: 0 4px 12px rgba(46, 213, 115, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.1s ease, background 0.2s;
+        }
+        .voice-btn:active {
+            transform: scale(0.95);
+        }
+        .voice-btn.listening {
+            background: #ff4757;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(255, 71, 87, 0.6);
+            animation: pulse 1s infinite alternate;
+        }
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
         .hint {
             color: #777;
             font-size: 11px;
@@ -100,7 +129,6 @@
         <h1 style="margin: 0 0 2px 0; font-size: 24px;">Manul Dude 😾</h1>
         <div class="rank-title" id="rankTitle">Rank 1: Annoying Roommate</div>
         
-        <!-- Интерактивная зона манула -->
         <div class="manul-container" id="manulBox">
             <img src="manul.jpg" alt="Manul Dude" class="manul-img" id="manulImg">
         </div>
@@ -120,10 +148,15 @@
         </div>
 
         <div class="dialogue" id="dialogueText">
-            Manul: "Sup man? Tap me or hold to charge chaos, dude!"
+            Manul: "Sup man? Tap me, hold, or talk to me, dude!"
         </div>
+
+        <!-- Кнопка голосового ввода -->
+        <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">
+            <span>🎙 Talk to Manul</span>
+        </button>
         
-        <div class="hint">💡 Quick tap: -3⚡ (+5💥) | Hold & Release: Super Epic Vandalism!</div>
+        <div class="hint">💡 Tap: -3⚡ (+5💥) | Hold: Super Chaos | 🎙 Voice chat ready</div>
     </div>
 
     <script>
@@ -137,7 +170,6 @@
 
         updateUI();
 
-        // База фраз агента
         const phrases = {
             hit: [
                 "C'mon dude, harder! Is that all you've got?",
@@ -154,13 +186,31 @@
                 "Bro, I'm out of energy! Let a dude take a nap!",
                 "Sup man, my paws are tired. Wait for recharge, dude!",
                 "No juice left, c'mon! I'm crying, let me rest!"
-            ],
-            rankUp: [
-                "Bro, you actually ranked up! Impressive, dude.",
-                "Leveling up in chaos? Now we're talking, man!",
-                "New rank unlocked! Time to cause some real damage, bro."
             ]
         };
+
+        // Логика умного ответа на распознанный голос
+        function getSmartVoiceResponse(text) {
+            let lower = text.toLowerCase();
+            
+            if (lower.includes('sleep') || lower.includes('спь') || lower.includes('отдых')) {
+                return "Sleep? A real boss never sleeps, dude! Only chaos!";
+            } else if (lower.includes('cat') || lower.includes('кот') || lower.includes('кис')) {
+                return "Don't call me 'cat' or 'kitty', bro! I'm Manul Dude, the Boss!";
+            } else if (lower.includes('hello') || lower.includes('hi') || lower.includes('привет')) {
+                return "Sup man! Ready to cause some damage, or what?";
+            } else if (lower.includes('food') || lower.includes('еда') || lower.includes('корм')) {
+                return "Bring me some premium steak, dude! I'm starving!";
+            } else {
+                const genericVoiceReplies = [
+                    "Blah blah blah! Less talking, more chaos, dude!",
+                    "Did you say something, bro? I was busy ruining the carpet.",
+                    "Sup man, talk is cheap! Show me some real action!",
+                    "Interesting story, dude... NOT! Now tap me harder!"
+                ];
+                return genericVoiceReplies[Math.floor(Math.random() * genericVoiceReplies.length)];
+            }
+        }
 
         let pressTimer = null;
         let isHolding = false;
@@ -169,7 +219,6 @@
         const box = document.getElementById('manulBox');
         const img = document.getElementById('manulImg');
 
-        // Обработчики нажатий
         box.addEventListener('mousedown', startPress);
         box.addEventListener('touchstart', (e) => { e.preventDefault(); startPress(); });
 
@@ -193,24 +242,15 @@
 
         function endPress() {
             box.classList.remove('charging');
-            
-            if (pressTimer) {
-                clearTimeout(pressTimer);
-                pressTimer = null;
-            }
-
-            if (!isHolding) {
-                triggerNormalTap();
-            }
+            if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+            if (!isHolding) triggerNormalTap();
         }
 
         function setTempImage(src, duration) {
             if (resetImgTimeout) clearTimeout(resetImgTimeout);
             img.src = src;
             resetImgTimeout = setTimeout(() => {
-                if (energy > 0) {
-                    img.src = 'manul.jpg';
-                }
+                if (energy > 0) img.src = 'manul.jpg';
             }, duration);
         }
 
@@ -222,13 +262,9 @@
 
         function triggerNormalTap() {
             const cost = 3;
-            // Награда увеличивается с ростом ранга!
             const reward = 5 * currentRank;
 
-            if (energy < cost) {
-                triggerNoEnergy();
-                return;
-            }
+            if (energy < cost) { triggerNoEnergy(); return; }
 
             energy -= cost;
             score += reward;
@@ -250,7 +286,6 @@
 
             if (energy < cost) {
                 triggerNoEnergy();
-                document.getElementById('dialogueText').innerText = `Manul: "Bro, not enough energy for a super smash! I'm out!"`;
                 return;
             }
 
@@ -269,18 +304,9 @@
         }
 
         function checkRankAndSave() {
-            let oldRank = currentRank;
-            
-            // Расчет рангов
             if (score >= 1000) currentRank = 3;
             else if (score >= 200) currentRank = 2;
             else currentRank = 1;
-
-            // Если ранг вырос — озвучиваем это через реплику агента
-            if (currentRank > oldRank) {
-                showDialogue(phrases.rankUp);
-                if (tg && tg.HapticFeedback) { try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){} }
-            }
 
             localStorage.setItem('manul_chaos_score', score);
             localStorage.setItem('manul_energy', energy);
@@ -292,7 +318,62 @@
             document.getElementById('dialogueText').innerText = `Manul: "${randomPhrase}"`;
         }
 
-        // Регенерация энергии (+1 каждые 1.5 секунды)
+        // --- ГОЛОСОВОЙ ВВОД (Speech Recognition) ---
+        let recognition = null;
+        let isListening = false;
+
+        if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US'; // Распознавание на английском (или 'ru-RU')
+
+            recognition.onstart = function() {
+                isListening = true;
+                const btn = document.getElementById('voiceBtn');
+                btn.classList.add('listening');
+                btn.innerHTML = '<span>🔴 Listening...</span>';
+                document.getElementById('dialogueText').innerText = 'Manul: "I\'m listening, bro. Speak up!"';
+            };
+
+            recognition.onresult = function(event) {
+                const speechResult = event.results[0][0].transcript;
+                const reply = getSmartVoiceResponse(speechResult);
+                
+                setTempImage('manul-angry.jpg', 800);
+                document.getElementById('dialogueText').innerText = `You: "${speechResult}"\nManul: "${reply}"`;
+            };
+
+            recognition.onerror = function(event) {
+                document.getElementById('dialogueText').innerText = 'Manul: "Didn\'t hear you, dude! Speak clearer!"';
+                stopListeningUI();
+            };
+
+            recognition.onend = function() {
+                stopListeningUI();
+            };
+        } else {
+            document.getElementById('voiceBtn').style.display = 'none';
+        }
+
+        function toggleVoice() {
+            if (!recognition) return;
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        }
+
+        function stopListeningUI() {
+            isListening = false;
+            const btn = document.getElementById('voiceBtn');
+            btn.classList.remove('listening');
+            btn.innerHTML = '<span>🎙 Talk to Manul</span>';
+        }
+
+        // Регенерация энергии
         setInterval(() => {
             if (energy < maxEnergy) {
                 energy = Math.min(maxEnergy, energy + 1);
@@ -308,7 +389,6 @@
             document.getElementById('score').innerText = score;
             document.getElementById('energyText').innerText = energy;
             
-            // Обновляем текст ранга на экране
             let rankNames = {
                 1: "Rank 1: Annoying Roommate",
                 2: "Rank 2: Neighborhood Terror",
