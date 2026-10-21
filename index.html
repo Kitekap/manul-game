@@ -75,6 +75,10 @@
             width: 100%;
             transition: width 0.15s ease;
         }
+        .energy-bar.boosted {
+            background: linear-gradient(90deg, #2ed573, #ffa502);
+            box-shadow: 0 0 10px rgba(46, 213, 115, 0.5);
+        }
         .dialogue {
             background: #252525;
             border-left: 4px solid #ff4757;
@@ -139,7 +143,7 @@
                 <span id="score" class="score-num">0</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #aaa;">
-                <span>⚡️ Energy</span>
+                <span>⚡️ Energy <span id="boostBadge" style="color: #2ed573; display: none;">(⚡️x2 REGEN)</span></span>
                 <span><span id="energyText">100</span> / 100</span>
             </div>
             <div class="energy-bar-container">
@@ -148,15 +152,15 @@
         </div>
 
         <div class="dialogue" id="dialogueText">
-            Manul: "Sup man? Tap me, hold, or talk to me, dude!"
+            Manul: "Sup man? Yell at me or call me weak to fuel my rage, dude!"
         </div>
 
-        <!-- Кнопка голосового ввода -->
+        <!-- Кнопка голосового взаимодействия -->
         <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">
-            <span>🎙 Talk to Manul</span>
+            <span>🎙 Talk / Rage Booster</span>
         </button>
         
-        <div class="hint">💡 Tap: -3⚡ (+5💥) | Hold: Super Chaos | 🎙 Voice chat ready</div>
+        <div class="hint">💡 Taunting & insulting Manul instantly restores +20 Energy & fuels 2x regen!</div>
     </div>
 
     <script>
@@ -167,6 +171,8 @@
         let energy = parseInt(localStorage.getItem('manul_energy')) || 100;
         let currentRank = 1;
         const maxEnergy = 100;
+        let isEnergyBoosted = false;
+        let boostTimer = null;
 
         updateUI();
 
@@ -186,30 +192,65 @@
                 "Bro, I'm out of energy! Let a dude take a nap!",
                 "Sup man, my paws are tired. Wait for recharge, dude!",
                 "No juice left, c'mon! I'm crying, let me rest!"
+            ],
+            rageRecharge: [
+                "WHAT DID YOU CALL ME, DUDE?! NOW I'M FULL OF RAGE! (+20⚡)",
+                "Phatetic human, your insults only make me stronger, bro! (+20⚡)",
+                "Who's weak?! I'll crush everything in this house now, man! (+20⚡)"
             ]
         };
 
-        // Логика умного ответа на распознанный голос
-        function getSmartVoiceResponse(text) {
+        // Логика разбора провокаций и голосовых команд
+        function handleVoiceCommand(text) {
             let lower = text.toLowerCase();
-            
-            if (lower.includes('sleep') || lower.includes('спь') || lower.includes('отдых')) {
-                return "Sleep? A real boss never sleeps, dude! Only chaos!";
-            } else if (lower.includes('cat') || lower.includes('кот') || lower.includes('кис')) {
-                return "Don't call me 'cat' or 'kitty', bro! I'm Manul Dude, the Boss!";
-            } else if (lower.includes('hello') || lower.includes('hi') || lower.includes('привет')) {
-                return "Sup man! Ready to cause some damage, or what?";
-            } else if (lower.includes('food') || lower.includes('еда') || lower.includes('корм')) {
-                return "Bring me some premium steak, dude! I'm starving!";
-            } else {
-                const genericVoiceReplies = [
-                    "Blah blah blah! Less talking, more chaos, dude!",
-                    "Did you say something, bro? I was busy ruining the carpet.",
-                    "Sup man, talk is cheap! Show me some real action!",
-                    "Interesting story, dude... NOT! Now tap me harder!"
-                ];
-                return genericVoiceReplies[Math.floor(Math.random() * genericVoiceReplies.length)];
+            activateEnergyBoost(); // Включает удвоенную скорость восстановления энергии
+
+            // Проверка на ругательства / подколы (провоцирование гнева манула)
+            const rageKeywords = ['weak', 'stupid', 'trus', 'трус', 'слабак', 'глупый', 'тупой', 'жалки', 'котенок', 'плохой', 'bad', 'fool', 'useless', 'пошел', 'дурак'];
+            let isRageTrigger = rageKeywords.some(word => lower.includes(word));
+
+            if (isRageTrigger) {
+                // Мгновенный приток энергии от злости!
+                energy = Math.min(maxEnergy, energy + 20);
+                saveAndRefresh();
+                setTempImage('manul-angry.jpg', 1200);
+                
+                let randomRagePhrase = phrases.rageRecharge[Math.floor(Math.random() * phrases.rageRecharge.length)];
+                document.getElementById('dialogueText').innerText = `You: "${text}"\nManul: "${randomRagePhrase}"`;
+                
+                if (tg && tg.HapticFeedback) { try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){} }
+                return;
             }
+
+            // Команды на сильный удар
+            if (lower.includes('smash') || lower.includes('break') || lower.includes('сломай') || lower.includes('круши')) {
+                if (energy >= 25) {
+                    triggerSuperChaos();
+                    document.getElementById('dialogueText').innerText = `You: "${text}"\nManul: "SUPER SMASH ACTIVATED, DUDE!"`;
+                } else {
+                    triggerNoEnergy();
+                }
+                return;
+            }
+
+            // Обычная речь
+            let reply = "Talk is cheap, bro! Yell at me or call me weak to boost my rage!";
+            setTempImage('manul-angry.jpg', 800);
+            document.getElementById('dialogueText').innerText = `You: "${text}"\nManul: "${reply}"`;
+        }
+
+        function activateEnergyBoost() {
+            isEnergyBoosted = true;
+            document.getElementById('boostBadge').style.display = 'inline';
+            document.getElementById('energyBar').classList.add('boosted');
+
+            if (boostTimer) clearTimeout(boostTimer);
+            // Удвоенная регенерация держится 15 секунд после разговора
+            boostTimer = setTimeout(() => {
+                isEnergyBoosted = false;
+                document.getElementById('boostBadge').style.display = 'none';
+                document.getElementById('energyBar').classList.remove('boosted');
+            }, 15000);
         }
 
         let pressTimer = null;
@@ -226,10 +267,7 @@
         box.addEventListener('touchend', (e) => { e.preventDefault(); endPress(); });
 
         function startPress() {
-            if (energy < 3) {
-                triggerNoEnergy();
-                return;
-            }
+            if (energy < 3) { triggerNoEnergy(); return; }
             isHolding = false;
             box.classList.add('charging');
             
@@ -284,10 +322,7 @@
             const cost = 25;
             const reward = 50 * currentRank;
 
-            if (energy < cost) {
-                triggerNoEnergy();
-                return;
-            }
+            if (energy < cost) { triggerNoEnergy(); return; }
 
             energy -= cost;
             score += reward;
@@ -308,14 +343,18 @@
             else if (score >= 200) currentRank = 2;
             else currentRank = 1;
 
-            localStorage.setItem('manul_chaos_score', score);
-            localStorage.setItem('manul_energy', energy);
-            updateUI();
+            saveAndRefresh();
         }
 
         function showDialogue(phraseArray) {
             let randomPhrase = phraseArray[Math.floor(Math.random() * phraseArray.length)];
             document.getElementById('dialogueText').innerText = `Manul: "${randomPhrase}"`;
+        }
+
+        function saveAndRefresh() {
+            localStorage.setItem('manul_chaos_score', score);
+            localStorage.setItem('manul_energy', energy);
+            updateUI();
         }
 
         // --- ГОЛОСОВОЙ ВВОД (Speech Recognition) ---
@@ -327,26 +366,22 @@
             recognition = new SpeechRecognition();
             recognition.continuous = false;
             recognition.interimResults = false;
-            recognition.lang = 'en-US'; // Распознавание на английском (или 'ru-RU')
 
             recognition.onstart = function() {
                 isListening = true;
                 const btn = document.getElementById('voiceBtn');
                 btn.classList.add('listening');
                 btn.innerHTML = '<span>🔴 Listening...</span>';
-                document.getElementById('dialogueText').innerText = 'Manul: "I\'m listening, bro. Speak up!"';
+                document.getElementById('dialogueText').innerText = 'Manul: "I\'m listening, bro. Call me weak if you dare!"';
             };
 
             recognition.onresult = function(event) {
                 const speechResult = event.results[0][0].transcript;
-                const reply = getSmartVoiceResponse(speechResult);
-                
-                setTempImage('manul-angry.jpg', 800);
-                document.getElementById('dialogueText').innerText = `You: "${speechResult}"\nManul: "${reply}"`;
+                handleVoiceCommand(speechResult);
             };
 
             recognition.onerror = function(event) {
-                document.getElementById('dialogueText').innerText = 'Manul: "Didn\'t hear you, dude! Speak clearer!"';
+                document.getElementById('dialogueText').innerText = 'Manul: "Didn\'t hear you, dude! Yell louder!"';
                 stopListeningUI();
             };
 
@@ -370,13 +405,14 @@
             isListening = false;
             const btn = document.getElementById('voiceBtn');
             btn.classList.remove('listening');
-            btn.innerHTML = '<span>🎙 Talk to Manul</span>';
+            btn.innerHTML = '<span>🎙 Talk / Rage Booster</span>';
         }
 
-        // Регенерация энергии
+        // Регенерация энергии (с учётом буста x2)
         setInterval(() => {
             if (energy < maxEnergy) {
-                energy = Math.min(maxEnergy, energy + 1);
+                let addEnergy = isEnergyBoosted ? 2 : 1;
+                energy = Math.min(maxEnergy, energy + addEnergy);
                 localStorage.setItem('manul_energy', energy);
                 if (energy > 0 && img.src.includes('manul-cry.jpg')) {
                     img.src = 'manul.jpg';
