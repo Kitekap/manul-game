@@ -33,13 +33,13 @@
             object-fit: cover;
             border: 4px solid #ff4757;
             box-shadow: 0 0 25px rgba(255, 71, 87, 0.4);
-            transition: transform 0.08s ease, box-shadow 0.08s ease;
+            transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.1s ease;
         }
         /* Анимация при зарядке супер-удара */
         .charging .manul-img {
             transform: scale(0.92);
             border-color: #ffa502;
-            box-shadow: 0 0 40px rgba(255, 165, 2, 0.8);
+            box-shadow: 0 0 45px rgba(255, 165, 2, 0.9);
         }
         .stats {
             background: #1e1e1e;
@@ -93,7 +93,7 @@
         <h1 style="margin: 0 0 5px 0; font-size: 26px;">Manul Dude 😾</h1>
         <p style="color: #888; margin: 0 0 10px 0; font-size: 13px;">Tap or Hold to unleash chaos</p>
         
-        <!-- Интерактивная зона манула с поддержкой зажатия -->
+        <!-- Интерактивная зона с поддержкой смены картинок -->
         <div class="manul-container" id="manulBox">
             <img src="manul.jpg" alt="Manul Dude" class="manul-img" id="manulImg">
         </div>
@@ -144,14 +144,18 @@
 
         const noEnergyPhrases = [
             "Bro, I'm out of energy! Let a dude take a nap!",
-            "Sup man, my paws are tired. Wait for recharge, dude!"
+            "Sup man, my paws are tired. Wait for recharge, dude!",
+            "No juice left, c'mon! I'm crying, let me rest!"
         ];
 
         let pressTimer = null;
         let isHolding = false;
-        const box = document.getElementById('manulBox');
+        let resetImgTimeout = null;
 
-        // События нажатия (поддержка и мышки, и телефонов)
+        const box = document.getElementById('manulBox');
+        const img = document.getElementById('manulImg');
+
+        // Обработчики нажатий
         box.addEventListener('mousedown', startPress);
         box.addEventListener('touchstart', (e) => { e.preventDefault(); startPress(); });
 
@@ -159,14 +163,18 @@
         box.addEventListener('touchend', (e) => { e.preventDefault(); endPress(); });
 
         function startPress() {
+            if (energy < 3) {
+                triggerNoEnergy();
+                return;
+            }
             isHolding = false;
             box.classList.add('charging');
             
-            // Если зажали больше чем на 800мс — это супер-удар (Hold)
             pressTimer = setTimeout(() => {
                 isHolding = true;
+                img.src = 'manul-super.jpg';
                 triggerSuperChaos();
-            }, 800);
+            }, 700);
         }
 
         function endPress() {
@@ -177,10 +185,25 @@
                 pressTimer = null;
             }
 
-            // Если палец убрали РИСКНУВ ДО КАНЦА ЗАРЯДКИ — сработал обычный тап
             if (!isHolding) {
                 triggerNormalTap();
             }
+        }
+
+        function setTempImage(src, duration) {
+            if (resetImgTimeout) clearTimeout(resetImgTimeout);
+            img.src = src;
+            resetImgTimeout = setTimeout(() => {
+                if (energy > 0) {
+                    img.src = 'manul.jpg';
+                }
+            }, duration);
+        }
+
+        function triggerNoEnergy() {
+            img.src = 'manul-cry.jpg';
+            showDialogue(noEnergyPhrases);
+            if (tg && tg.HapticFeedback) { try { tg.HapticFeedback.notificationOccurred('error'); } catch(e){} }
         }
 
         function triggerNormalTap() {
@@ -188,8 +211,7 @@
             const reward = 5;
 
             if (energy < cost) {
-                showDialogue(noEnergyPhrases);
-                if (tg && tg.HapticFeedback) { try { tg.HapticFeedback.notificationOccurred('error'); } catch(e){} }
+                triggerNoEnergy();
                 return;
             }
 
@@ -197,7 +219,13 @@
             score += reward;
             saveAndRefresh();
 
-            showDialogue(hitPhrases);
+            if (energy === 0) {
+                triggerNoEnergy();
+            } else {
+                setTempImage('manul-angry.jpg', 400);
+                showDialogue(hitPhrases);
+            }
+
             if (tg && tg.HapticFeedback) { try { tg.HapticFeedback.impactOccurred('medium'); } catch(e){} }
         }
 
@@ -206,8 +234,8 @@
             const reward = 60;
 
             if (energy < cost) {
-                document.getElementById('dialogueText').innerText = `Manul: "Bro, not enough energy for a super smash! Let me rest!"`;
-                if (tg && tg.HapticFeedback) { try { tg.HapticFeedback.notificationOccurred('error'); } catch(e){} }
+                triggerNoEnergy();
+                document.getElementById('dialogueText').innerText = `Manul: "Bro, not enough energy for a super smash! I'm out!"`;
                 return;
             }
 
@@ -215,7 +243,13 @@
             score += reward;
             saveAndRefresh();
 
-            showDialogue(superPhrases);
+            if (energy === 0) {
+                triggerNoEnergy();
+            } else {
+                setTempImage('manul-super.jpg', 1200);
+                showDialogue(superPhrases);
+            }
+
             if (tg && tg.HapticFeedback) { try { tg.HapticFeedback.notificationOccurred('heavy'); } catch(e){} }
         }
 
@@ -230,11 +264,14 @@
             updateUI();
         }
 
-        // Авто-восстановление энергии (+1 каждые 1.5 секунды)
+        // Регенерация энергии (+1 каждые 1.5 секунды)
         setInterval(() => {
             if (energy < maxEnergy) {
                 energy = Math.min(maxEnergy, energy + 1);
                 localStorage.setItem('manul_energy', energy);
+                if (energy > 0 && img.src.includes('manul-cry.jpg')) {
+                    img.src = 'manul.jpg';
+                }
                 updateUI();
             }
         }, 1500);
