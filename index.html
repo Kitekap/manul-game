@@ -21,21 +21,20 @@
             margin: 0 auto;
         }
         .manul-container {
-            margin: 20px 0;
+            margin: 15px 0;
             cursor: pointer;
             display: inline-block;
             position: relative;
         }
         .manul-img {
-            width: 240px;
-            height: 240px;
+            width: 220px;
+            height: 220px;
             border-radius: 28px;
             object-fit: cover;
             border: 4px solid #ff4757;
             box-shadow: 0 0 25px rgba(255, 71, 87, 0.4);
-            transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.1s ease;
+            transition: transform 0.08s ease, box-shadow 0.08s ease;
         }
-        /* Анимация при зарядке супер-удара */
         .charging .manul-img {
             transform: scale(0.92);
             border-color: #ffa502;
@@ -43,22 +42,30 @@
         }
         .stats {
             background: #1e1e1e;
-            padding: 15px;
+            padding: 12px;
             border-radius: 16px;
-            margin: 15px 0;
+            margin: 10px 0;
             border: 1px solid #333;
         }
         .score-num {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: bold;
             color: #ff4757;
+        }
+        .rank-title {
+            color: #ffa502;
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
         }
         .energy-bar-container {
             background: #333;
             border-radius: 10px;
-            height: 14px;
+            height: 12px;
             width: 100%;
-            margin-top: 10px;
+            margin-top: 8px;
             overflow: hidden;
             border: 1px solid #444;
         }
@@ -71,39 +78,39 @@
         .dialogue {
             background: #252525;
             border-left: 4px solid #ff4757;
-            padding: 14px;
-            margin-top: 15px;
+            padding: 12px;
+            margin-top: 12px;
             border-radius: 0 14px 14px 0;
             text-align: left;
             font-style: italic;
-            font-size: 14px;
+            font-size: 13px;
             line-height: 1.4;
-            min-height: 46px;
+            min-height: 44px;
         }
         .hint {
             color: #777;
-            font-size: 12px;
-            margin-top: 10px;
+            font-size: 11px;
+            margin-top: 8px;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1 style="margin: 0 0 5px 0; font-size: 26px;">Manul Dude 😾</h1>
-        <p style="color: #888; margin: 0 0 10px 0; font-size: 13px;">Tap or Hold to unleash chaos</p>
+        <h1 style="margin: 0 0 2px 0; font-size: 24px;">Manul Dude 😾</h1>
+        <div class="rank-title" id="rankTitle">Rank 1: Annoying Roommate</div>
         
-        <!-- Интерактивная зона с поддержкой смены картинок -->
+        <!-- Интерактивная зона манула -->
         <div class="manul-container" id="manulBox">
             <img src="manul.jpg" alt="Manul Dude" class="manul-img" id="manulImg">
         </div>
 
         <div class="stats">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <span>💥 Chaos:</span>
                 <span id="score" class="score-num">0</span>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #aaa;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #aaa;">
                 <span>⚡️ Energy</span>
                 <span><span id="energyText">100</span> / 100</span>
             </div>
@@ -125,28 +132,35 @@
 
         let score = parseInt(localStorage.getItem('manul_chaos_score')) || 0;
         let energy = parseInt(localStorage.getItem('manul_energy')) || 100;
+        let currentRank = 1;
         const maxEnergy = 100;
 
         updateUI();
 
-        const hitPhrases = [
-            "C'mon dude, harder! Is that all you've got?",
-            "Sup man, don't test my patience, bro!",
-            "Ouch? Nah, I felt nothing, pathetic human.",
-            "That's pure chaos, keep tapping, dude!"
-        ];
-
-        const superPhrases = [
-            "BOOM! Absolute destruction, bro! That's how a boss does it!",
-            "Holy moly, dude! You just wrecked the whole room!",
-            "Maximum rage activated! Respect, man!"
-        ];
-
-        const noEnergyPhrases = [
-            "Bro, I'm out of energy! Let a dude take a nap!",
-            "Sup man, my paws are tired. Wait for recharge, dude!",
-            "No juice left, c'mon! I'm crying, let me rest!"
-        ];
+        // База фраз агента
+        const phrases = {
+            hit: [
+                "C'mon dude, harder! Is that all you've got?",
+                "Sup man, don't test my patience, bro!",
+                "Ouch? Nah, I felt nothing, pathetic human.",
+                "That's pure chaos, keep tapping, dude!"
+            ],
+            super: [
+                "BOOM! Absolute destruction, bro! That's how a boss does it!",
+                "Holy moly, dude! You just wrecked the whole room!",
+                "Maximum rage activated! Respect, man!"
+            ],
+            noEnergy: [
+                "Bro, I'm out of energy! Let a dude take a nap!",
+                "Sup man, my paws are tired. Wait for recharge, dude!",
+                "No juice left, c'mon! I'm crying, let me rest!"
+            ],
+            rankUp: [
+                "Bro, you actually ranked up! Impressive, dude.",
+                "Leveling up in chaos? Now we're talking, man!",
+                "New rank unlocked! Time to cause some real damage, bro."
+            ]
+        };
 
         let pressTimer = null;
         let isHolding = false;
@@ -202,13 +216,14 @@
 
         function triggerNoEnergy() {
             img.src = 'manul-cry.jpg';
-            showDialogue(noEnergyPhrases);
+            showDialogue(phrases.noEnergy);
             if (tg && tg.HapticFeedback) { try { tg.HapticFeedback.notificationOccurred('error'); } catch(e){} }
         }
 
         function triggerNormalTap() {
             const cost = 3;
-            const reward = 5;
+            // Награда увеличивается с ростом ранга!
+            const reward = 5 * currentRank;
 
             if (energy < cost) {
                 triggerNoEnergy();
@@ -217,13 +232,13 @@
 
             energy -= cost;
             score += reward;
-            saveAndRefresh();
+            checkRankAndSave();
 
             if (energy === 0) {
                 triggerNoEnergy();
             } else {
                 setTempImage('manul-angry.jpg', 400);
-                showDialogue(hitPhrases);
+                showDialogue(phrases.hit);
             }
 
             if (tg && tg.HapticFeedback) { try { tg.HapticFeedback.impactOccurred('medium'); } catch(e){} }
@@ -231,7 +246,7 @@
 
         function triggerSuperChaos() {
             const cost = 25;
-            const reward = 60;
+            const reward = 50 * currentRank;
 
             if (energy < cost) {
                 triggerNoEnergy();
@@ -241,27 +256,40 @@
 
             energy -= cost;
             score += reward;
-            saveAndRefresh();
+            checkRankAndSave();
 
             if (energy === 0) {
                 triggerNoEnergy();
             } else {
                 setTempImage('manul-super.jpg', 1200);
-                showDialogue(superPhrases);
+                showDialogue(phrases.super);
             }
 
             if (tg && tg.HapticFeedback) { try { tg.HapticFeedback.notificationOccurred('heavy'); } catch(e){} }
         }
 
-        function showDialogue(phraseArray) {
-            let randomPhrase = phraseArray[Math.floor(Math.random() * phraseArray.length)];
-            document.getElementById('dialogueText').innerText = `Manul: "${randomPhrase}"`;
-        }
+        function checkRankAndSave() {
+            let oldRank = currentRank;
+            
+            // Расчет рангов
+            if (score >= 1000) currentRank = 3;
+            else if (score >= 200) currentRank = 2;
+            else currentRank = 1;
 
-        function saveAndRefresh() {
+            // Если ранг вырос — озвучиваем это через реплику агента
+            if (currentRank > oldRank) {
+                showDialogue(phrases.rankUp);
+                if (tg && tg.HapticFeedback) { try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){} }
+            }
+
             localStorage.setItem('manul_chaos_score', score);
             localStorage.setItem('manul_energy', energy);
             updateUI();
+        }
+
+        function showDialogue(phraseArray) {
+            let randomPhrase = phraseArray[Math.floor(Math.random() * phraseArray.length)];
+            document.getElementById('dialogueText').innerText = `Manul: "${randomPhrase}"`;
         }
 
         // Регенерация энергии (+1 каждые 1.5 секунды)
@@ -279,6 +307,15 @@
         function updateUI() {
             document.getElementById('score').innerText = score;
             document.getElementById('energyText').innerText = energy;
+            
+            // Обновляем текст ранга на экране
+            let rankNames = {
+                1: "Rank 1: Annoying Roommate",
+                2: "Rank 2: Neighborhood Terror",
+                3: "Rank 3: Global Menace 👑"
+            };
+            document.getElementById('rankTitle').innerText = rankNames[currentRank];
+
             let percent = (energy / maxEnergy) * 100;
             document.getElementById('energyBar').style.width = percent + '%';
         }
